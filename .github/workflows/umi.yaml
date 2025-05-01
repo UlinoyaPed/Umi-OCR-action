@@ -60,9 +60,12 @@ jobs:
       - name: Perform OCR
         run: |
           curl -X POST -F "file=@input.pdf" -F "json={}" http://127.0.0.1:1224/api/doc/upload > upload_response.json
+          cat upload_response.json  # 打印上传响应
           TASK_ID=$(jq -r '.data' upload_response.json)
+          echo "Task ID: $TASK_ID"  # 打印任务 ID
           while true; do
             curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\"}" http://127.0.0.1:1224/api/doc/result > result.json
+            cat result.json  # 打印任务状态响应
             IS_DONE=$(jq -r '.is_done' result.json)
             if [ "$IS_DONE" = "true" ]; then
               break
@@ -70,7 +73,9 @@ jobs:
             sleep 5
           done
           curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\",\"file_types\":[\"pdfLayered\",\"pdfOneLayer\",\"txt\",\"txtPlain\",\"jsonl\",\"csv\"]}" http://127.0.0.1:1224/api/doc/download > download_response.json
+          cat download_response.json  # 打印下载链接响应
           DOWNLOAD_URL=$(jq -r '.data' download_response.json)
+          echo "Download URL: $DOWNLOAD_URL"  # 打印下载链接
           curl -o result.zip "$DOWNLOAD_URL"
 
       # Step 7: Upload the result as an artifact
