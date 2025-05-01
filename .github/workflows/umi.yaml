@@ -35,10 +35,25 @@ jobs:
             -p 1224:1224 \
             umi-ocr-paddle
 
+      # Step 4.1: Verify Umi-OCR container is running
+      - name: Verify Umi-OCR container
+        run: |
+          docker ps | grep umi-ocr || (echo "Umi-OCR container is not running" && exit 1)
+
+      # Step 4.2: Check Umi-OCR API health
+      - name: Check Umi-OCR API health
+        run: |
+          curl -X GET http://127.0.0.1:1224/api/doc/get_options || (echo "Umi-OCR API is not responding" && exit 1)
+
       # Step 5: Download the PDF file
       - name: Download PDF
         run: |
           curl -o input.pdf "${{ github.event.inputs.pdf_url }}"
+
+      # Step 5.1: Verify PDF file is downloaded
+      - name: Verify PDF file
+        run: |
+          ls -lh input.pdf || (echo "PDF file not found or empty" && exit 1)
 
       # Step 6: Perform OCR on the PDF
       - name: Perform OCR
