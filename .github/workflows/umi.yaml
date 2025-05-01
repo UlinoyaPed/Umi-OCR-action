@@ -32,7 +32,7 @@ jobs:
         run: |
           docker run -d --name umi-ocr \
             -e HEADLESS=true \
-            -p 1224:1224 \
+            --network host \
             umi-ocr-paddle
 
       # Step 4.1: Verify Umi-OCR container is running
@@ -43,6 +43,7 @@ jobs:
       # Step 4.2: Check Umi-OCR API health
       - name: Check Umi-OCR API health
         run: |
+          sleep 10
           curl -X GET http://127.0.0.1:1224/api/doc/get_options || (echo "Umi-OCR API is not responding" && exit 1)
 
       # Step 5: Download the PDF file
