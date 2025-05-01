@@ -59,7 +59,7 @@ jobs:
 
       # Step 7: Upload the result as an artifact
       - name: Upload OCR result
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ocr-result
           path: result.zip
