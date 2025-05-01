@@ -1,0 +1,65 @@
+name: Run Umi-OCR Docker
+
+on:
+  workflow_dispatch:
+    inputs:
+      pdf_url:
+        description: 'PDF 文件链接'
+        required: true
+        type: string
+
+jobs:
+  run-umi-ocr:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Docker
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Build the Docker image
+      - name: Build Umi-OCR Docker image
+        run: |
+          wget https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/Dockerfile
+          docker build -t umi-ocr-paddle .
+
+      # Step 4: Run the Docker container in headless mode
+      - name: Run Umi-OCR container
+        run: |
+          docker run -d --name umi-ocr \
+            -e HEADLESS=true \
+            -p 1224:1224 \
+            umi-ocr-paddle
+
+      # Step 5: Download the PDF file
+      - name: Download PDF
+        run: |
+          curl -o input.pdf "${{ github.event.inputs.pdf_url }}"
+
+      # Step 6: Perform OCR on the PDF
+      - name: Perform OCR
+        run: |
+          curl -X POST -F "file=@input.pdf" -F "json={}" http://127.0.0.1:1224/api/doc/upload > upload_response.json
+          TASK_ID=$(jq -r '.data' upload_response.json)
+          while true; do
+            curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\"}" http://127.0.0.1:1224/api/doc/result > result.json
+            IS_DONE=$(jq -r '.is_done' result.json)
+            if [ "$IS_DONE" = "true" ]; then
+              break
+            fi
+            sleep 5
+          done
+          curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\",\"file_types\":[\"pdfLayered\",\"pdfOneLayer\",\"txt\",\"txtPlain\",\"jsonl\",\"csv\"]}" http://127.0.0.1:1224/api/doc/download > download_response.json
+          DOWNLOAD_URL=$(jq -r '.data' download_response.json)
+          curl -o result.zip "$DOWNLOAD_URL"
+
+      # Step 7: Upload the result as an artifact
+      - name: Upload OCR result
+        uses: actions/upload-artifact@v3
+        with:
+          name: ocr-result
+          path: result.zip
