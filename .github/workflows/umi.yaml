@@ -4,32 +4,34 @@ on:
   workflow_dispatch:
     inputs:
       pdf_url:
-        description: 'PDF 文件链接'
+        description: 'PDF 文件链接'  # 用户输入 PDF 文件的 URL
         required: true
         type: string
 
 jobs:
   run-umi-ocr:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest  # 使用最新的 Ubuntu 作为运行环境
 
     steps:
       # Step 1: Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # 拉取当前仓库代码
 
       # Step 2: Set up Docker
       - name: Set up Docker
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v2  # 设置 Docker 构建环境
 
       # Step 3: Build the Docker image
       - name: Build Umi-OCR Docker image
         run: |
+          # 下载 Dockerfile 并构建 Umi-OCR 的 Docker 镜像
           wget https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/Dockerfile
           docker build -t umi-ocr-paddle .
 
       # Step 4: Run the Docker container in headless mode
       - name: Run Umi-OCR container
         run: |
+          # 启动 Umi-OCR 容器，设置为无头模式并使用主机网络
           docker run -d --name umi-ocr \
             -e HEADLESS=true \
             --network host \
@@ -38,49 +40,61 @@ jobs:
       # Step 4.1: Verify Umi-OCR container is running
       - name: Verify Umi-OCR container
         run: |
+          # 检查容器是否成功运行
           docker ps | grep umi-ocr || (echo "Umi-OCR container is not running" && exit 1)
 
       # Step 4.2: Check Umi-OCR API health
       - name: Check Umi-OCR API health
         run: |
+          # 等待容器启动并检查 API 是否可用
           sleep 10
           curl -X GET http://127.0.0.1:1224/api/doc/get_options || (echo "Umi-OCR API is not responding" && exit 1)
 
       # Step 5: Download the PDF file
       - name: Download PDF
         run: |
+          # 下载用户提供的 PDF 文件
           curl -o input.pdf "${{ github.event.inputs.pdf_url }}"
 
       # Step 5.1: Verify PDF file is downloaded
       - name: Verify PDF file
         run: |
+          # 验证 PDF 文件是否成功下载
           ls -lh input.pdf || (echo "PDF file not found or empty" && exit 1)
 
       # Step 6: Perform OCR on the PDF
       - name: Perform OCR
         run: |
+          # 上传 PDF 文件到 Umi-OCR API
           curl -X POST -F "file=@input.pdf" -F "json={}" http://127.0.0.1:1224/api/doc/upload > upload_response.json
           cat upload_response.json  # 打印上传响应
-          TASK_ID=$(jq -r '.data' upload_response.json)
+          TASK_ID=$(jq -r '.data' upload_response.json)  # 提取任务 ID
           echo "Task ID: $TASK_ID"  # 打印任务 ID
+
+          # 循环检查 OCR 任务状态
           while true; do
             curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\"}" http://127.0.0.1:1224/api/doc/result > result.json
             cat result.json  # 打印任务状态响应
-            IS_DONE=$(jq -r '.is_done' result.json)
+            IS_DONE=$(jq -r '.is_done' result.json)  # 检查任务是否完成
+            PROCESSED_COUNT=$(jq -r '.processed_count' result.json)  # 已处理页数
+            PAGES_COUNT=$(jq -r '.pages_count' result.json)  # 总页数
+            echo "Processed $PROCESSED_COUNT/$PAGES_COUNT pages..."  # 实时输出进度
             if [ "$IS_DONE" = "true" ]; then
               break
             fi
-            sleep 5
+            sleep 10  # 每隔几秒检查一次
           done
+
+          # 请求下载 OCR 结果
           curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\",\"file_types\":[\"pdfLayered\",\"pdfOneLayer\",\"txt\",\"txtPlain\",\"jsonl\",\"csv\"]}" http://127.0.0.1:1224/api/doc/download > download_response.json
           cat download_response.json  # 打印下载链接响应
-          DOWNLOAD_URL=$(jq -r '.data' download_response.json)
-          echo "Download URL: $DOWNLOAD_URL"  # 打印下载链接
-          curl -o result.zip "$DOWNLOAD_URL"
+          DOWNLOAD_URL=$(jq -r '.data | @uri' download_response.json)  # 使用 jq 对 URL 进行编码
+          echo "Encoded Download URL: $DOWNLOAD_URL"  # 打印编码后的下载链接
+          curl -o result.zip "$DOWNLOAD_URL"  # 下载结果文件
 
       # Step 7: Upload the result as an artifact
       - name: Upload OCR result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4  # 上传结果文件作为工作流的输出
         with:
-          name: ocr-result
-          path: result.zip
+          name: ocr-result  # 结果文件的名称
+          path: result.zip  # 结果文件的路径
