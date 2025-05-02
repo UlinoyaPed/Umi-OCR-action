@@ -89,8 +89,8 @@ jobs:
           curl -s -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\",\"file_types\":[\"pdfLayered\",\"pdfOneLayer\",\"txt\",\"txtPlain\",\"jsonl\",\"csv\"]}" http://127.0.0.1:1224/api/doc/download > download_response.json
           cat download_response.json  # 打印下载链接响应
           RAW_URL=$(jq -r '.data' download_response.json)  # 提取原始下载链接
-          BASE_URL=$(echo "$RAW_URL" | sed -E 's|^(https?://[^/]+).*|\1|')  # 提取协议和主机名
-          PATH_URL=$(echo "$RAW_URL" | sed -E 's|^https?://[^/]+||' | jq -Rr @uri)  # 对路径部分进行编码
+          BASE_URL=$(echo "$RAW_URL" | sed -E 's|^(https?://[^/]+/).*|\1|')  # 提取基础 URL
+          PATH_URL=$(echo "$RAW_URL" | sed -E 's|^.*/||' | jq -Rr @uri)  # 对最后部分进行编码
           ENCODED_URL="$BASE_URL$PATH_URL"  # 拼接完整的编码后的 URL
           echo "Encoded Download URL: $ENCODED_URL"  # 打印编码后的下载链接
           curl -s -o result.zip "$ENCODED_URL"  # 下载结果文件
