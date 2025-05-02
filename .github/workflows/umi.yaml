@@ -57,7 +57,22 @@ jobs:
           curl -o input.pdf "${{ github.event.inputs.pdf_url }}"
           URL="${{ github.event.inputs.pdf_url }}"
           ORIGINAL_NAME=$(basename "${URL%%\?*}" .pdf)  # 提取文件名并去掉扩展名
-          echo "ORIGINAL_NAME=$ORIGINAL_NAME" >> $GITHUB_ENV
+          # 清理流程
+          SAFE_NAME=$(echo "$ORIGINAL_NAME" | \
+              sed -e '
+                  s/ /_/g;                # 空格转下划线
+                  s/[()，,+=@&$!]/_/g;    # 关键符号替换
+                  s/\.pdf$//;             # 去除原始后缀
+                  s/_-_/_/g;              # 处理间隔符变体
+                  s/__\+/_/g;             # 合并连续下划线
+                  s/^[_-]\+//;            # 去除开头无效字符
+                  s/[_-]\+$//;            # 去除结尾无效字符
+              ' | head -c 50)
+
+          # 输出清理后的文件名
+          echo "清理后的文件名: $SAFE_NAME"
+
+          echo "ORIGINAL_NAME=$SAFE_NAME" >> $GITHUB_ENV
 
       # Step 5.1: Verify PDF file is downloaded
       - name: Verify PDF file
@@ -106,7 +121,7 @@ jobs:
           ORIGINAL_NAME=${{ env.ORIGINAL_NAME }}
           find result -type f -name '*input*' | while read FILE; do
             NEW_NAME=$(echo "$FILE" | sed "s/input/$ORIGINAL_NAME/g")
-            mv "$FILE" "$NEW_NAME"
+            mv -- "$FILE" "$NEW_NAME"
           done
 
           # 打印替换后的文件结构
