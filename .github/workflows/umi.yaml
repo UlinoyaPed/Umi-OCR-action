@@ -126,19 +126,26 @@ jobs:
       # Step 7: Upload the result as an artifact
       - name: Process and Upload OCR result
         run: |
-          # 解压 result.zip 到 result 文件夹
-          unzip -o result.zip -d result
+          # 解压时强制处理非常规文件名
+          unzip -o -O UTF-8 result.zip -d result
 
-          # 替换文件名中的 'input' 为原始文件名
-          ORIGINAL_NAME=${{ env.ORIGINAL_NAME }}
-          find result -type f -name '*input*' | while read FILE; do
-            NEW_NAME=$(echo "$FILE" | sed "s/input/$ORIGINAL_NAME/g")
-            mv -- "$FILE" "$NEW_NAME"
+          # 使用稳健的重命名逻辑
+          ORIGINAL_NAME="${{ env.ORIGINAL_NAME }}"
+          
+          # 方法一：使用 find + xargs 处理含空格文件名
+          find result -type f -name '*input*' -print0 | while IFS= read -r -d '' FILE; do
+            DIR_PATH=$(dirname "$FILE")
+            OLD_NAME=$(basename "$FILE")
+            NEW_NAME="${OLD_NAME//input/$ORIGINAL_NAME}"
+            mv -- "$FILE" "$DIR_PATH/$NEW_NAME"
           done
 
-          # 打印替换后的文件结构
-          echo "Updated file structure:"
-          find result
+          # 方法二（更安全）：使用并行处理
+          # find result -type f -name '*input*' | parallel -q mv -- {} "$(echo {} | sed 's/input/$ORIGINAL_NAME/')"
+
+          # 打印调试信息
+          echo "Final structure:"
+          find result -exec ls -ld {} \;
 
       - name: Upload OCR result
         uses: actions/upload-artifact@v4
