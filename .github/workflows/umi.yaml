@@ -48,7 +48,7 @@ jobs:
         run: |
           # 等待容器启动并检查 API 是否可用
           sleep 10
-          curl -X GET http://127.0.0.1:1224/api/doc/get_options || (echo "Umi-OCR API is not responding" && exit 1)
+          curl -s -X GET http://127.0.0.1:1224/api/doc/get_options || (echo "Umi-OCR API is not responding" && exit 1)
 
       # Step 5: Download the PDF file
       - name: Download PDF
@@ -66,19 +66,19 @@ jobs:
       - name: Perform OCR
         run: |
           # 上传 PDF 文件到 Umi-OCR API
-          curl -X POST -F "file=@input.pdf" -F "json={}" http://127.0.0.1:1224/api/doc/upload > upload_response.json
+          curl -s -X POST -F "file=@input.pdf" -F "json={}" http://127.0.0.1:1224/api/doc/upload > upload_response.json
           cat upload_response.json  # 打印上传响应
           TASK_ID=$(jq -r '.data' upload_response.json)  # 提取任务 ID
           echo "Task ID: $TASK_ID"  # 打印任务 ID
 
           # 循环检查 OCR 任务状态
           while true; do
-            curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\"}" http://127.0.0.1:1224/api/doc/result > result.json
+            curl -s -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\"}" http://127.0.0.1:1224/api/doc/result > result.json
             cat result.json  # 打印任务状态响应
             IS_DONE=$(jq -r '.is_done' result.json)  # 检查任务是否完成
             PROCESSED_COUNT=$(jq -r '.processed_count' result.json)  # 已处理页数
             PAGES_COUNT=$(jq -r '.pages_count' result.json)  # 总页数
-            echo "Processed $PROCESSED_COUNT/$PAGES_COUNT pages..."  # 实时输出进度
+            echo "\nProcessed $PROCESSED_COUNT/$PAGES_COUNT pages..."  # 实时输出进度
             if [ "$IS_DONE" = "true" ]; then
               break
             fi
@@ -86,11 +86,14 @@ jobs:
           done
 
           # 请求下载 OCR 结果
-          curl -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\",\"file_types\":[\"pdfLayered\",\"pdfOneLayer\",\"txt\",\"txtPlain\",\"jsonl\",\"csv\"]}" http://127.0.0.1:1224/api/doc/download > download_response.json
+          curl -s -X POST -H "Content-Type: application/json" -d "{\"id\":\"$TASK_ID\",\"file_types\":[\"pdfLayered\",\"pdfOneLayer\",\"txt\",\"txtPlain\",\"jsonl\",\"csv\"]}" http://127.0.0.1:1224/api/doc/download > download_response.json
           cat download_response.json  # 打印下载链接响应
-          DOWNLOAD_URL=$(jq -r '.data | @uri' download_response.json)  # 使用 jq 对 URL 进行编码
-          echo "Encoded Download URL: $DOWNLOAD_URL"  # 打印编码后的下载链接
-          curl -o result.zip "$DOWNLOAD_URL"  # 下载结果文件
+          RAW_URL=$(jq -r '.data' download_response.json)  # 提取原始下载链接
+          BASE_URL=$(echo "$RAW_URL" | sed -E 's|^(https?://[^/]+).*|\1|')  # 提取协议和主机名
+          PATH_URL=$(echo "$RAW_URL" | sed -E 's|^https?://[^/]+||' | jq -Rr @uri)  # 对路径部分进行编码
+          ENCODED_URL="$BASE_URL$PATH_URL"  # 拼接完整的编码后的 URL
+          echo "Encoded Download URL: $ENCODED_URL"  # 打印编码后的下载链接
+          curl -s -o result.zip "$ENCODED_URL"  # 下载结果文件
 
       # Step 7: Upload the result as an artifact
       - name: Upload OCR result
