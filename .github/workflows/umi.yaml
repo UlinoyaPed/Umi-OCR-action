@@ -55,7 +55,8 @@ jobs:
         run: |
           # 下载用户提供的 PDF 文件并记录原始文件名（去除后缀）
           curl -o input.pdf "${{ github.event.inputs.pdf_url }}"
-          ORIGINAL_NAME=$(basename "${{ github.event.inputs.pdf_url }}" .pdf)
+          URL="${{ github.event.inputs.pdf_url }}"
+          ORIGINAL_NAME=$(basename "${URL%%\?*}" .pdf)  # 提取文件名并去掉扩展名
           echo "ORIGINAL_NAME=$ORIGINAL_NAME" >> $GITHUB_ENV
 
       # Step 5.1: Verify PDF file is downloaded
