@@ -81,25 +81,26 @@ jobs:
           echo "Failed to download PDF after 3 attempts" && exit 1
           fi
 
-          URL="${{ github.event.inputs.pdf_url }}"
-          ORIGINAL_NAME=$(basename "${URL%%\?*}" .pdf)  # 提取文件名并去掉扩展名
+          # 先进行 URL 解码
+          DECODED_URL=$(echo "${{ github.event.inputs.pdf_url }}" | python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))")
+          
+          # 提取文件名并去掉扩展名
+          ORIGINAL_NAME=$(basename "${DECODED_URL%%\?*}" .pdf)
           
           # 清理流程
           SAFE_NAME=$(echo "$ORIGINAL_NAME" | \
-            # 先进行 URL 解码
-            python3 -c "import sys, urllib.parse; print(urllib.parse.unquote(sys.stdin.read()))" | \
-            # 清理特殊字符（保留 . 和中文）
-            sed -e '
-                s/[][()，,+=@&$!]/_/g;  # 替换危险符号
-                s/\s+/_/g;              # 空格转下划线
-                s/\.pdf$//i;            # 去除原始后缀（不区分大小写）
-                s/_-_/_/g;              # 处理间隔符变体
-                s/__\+/_/g;             # 合并连续下划线
-                s/^[_-]\+//;            # 去除开头无效字符
-                s/[_-]\+$//;            # 去除结尾无效字符
-            ' | \
-            # 按字符截断（而非字节），保留最后10字符给后缀
-            awk '{ len = length($0); max = 50; if (len > max) print substr($0, 1, max-10); else print $0 }'
+          # 清理特殊字符（保留 . 和中文）
+          sed -e '
+            s/[][()，,+=@&$!]/_/g;  # 替换危险符号
+            s/\s+/_/g;              # 空格转下划线
+            s/\.pdf$//i;            # 去除原始后缀（不区分大小写）
+            s/_-_/_/g;              # 处理间隔符变体
+            s/__\+/_/g;             # 合并连续下划线
+            s/^[_-]\+//;            # 去除开头无效字符
+            s/[_-]\+$//;            # 去除结尾无效字符
+          ' | \
+          # 按字符截断（而非字节），保留最后10字符给后缀
+          awk '{ len = length($0); max = 50; if (len > max) print substr($0, 1, max-10); else print $0 }'
           )
 
           # 输出清理后的文件名
