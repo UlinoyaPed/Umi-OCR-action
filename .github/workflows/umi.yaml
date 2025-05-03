@@ -99,7 +99,6 @@ jobs:
       - name: Perform OCR
         run: |
           config='{
-            "ocr.language": "models/config_chinese_cht(v2).txt",
             "ocr.cls": true,
             "ocr.limit_side_len": 2880
           }'

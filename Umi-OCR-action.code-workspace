@@ -5,8 +5,6 @@
 		}
 	],
 	"settings": {
-		"github-actions.workflows.pinned.workflows": [
-			".github/workflows/umi.yaml"
-		]
+		"github-actions.workflows.pinned.workflows": []
 	}
 }
