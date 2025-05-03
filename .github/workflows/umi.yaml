@@ -11,6 +11,8 @@ on:
 jobs:
   run-umi-ocr:
     runs-on: ubuntu-latest  # 使用最新的 Ubuntu 作为运行环境
+    permissions:
+      packages: read  # 允许读取包
 
     steps:
       # Step 1: Checkout the repository
@@ -26,12 +28,18 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2  # 设置 Docker 构建环境
 
-      # Step 3: Build the Docker image
-      - name: Build Umi-OCR Docker image
+      # Step 3: Pull the Umi-OCR Docker image
+      - name: Log into GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull prebuilt image
         run: |
-          # 下载 Dockerfile 并构建 Umi-OCR 的 Docker 镜像
-          wget https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/Dockerfile
-          docker build -t umi-ocr-paddle .
+          docker pull ghcr.io/${{ github.repository }}/umi-ocr-paddle:latest
+          docker tag ghcr.io/${{ github.repository }}/umi-ocr-paddle:latest umi-ocr-paddle:latest
 
       # Step 4: Run the Docker container in headless mode
       - name: Run Umi-OCR container
@@ -40,7 +48,7 @@ jobs:
           docker run -d --name umi-ocr \
             -e HEADLESS=true \
             --network host \
-            umi-ocr-paddle
+            umi-ocr-paddle:latest
 
       # Step 4.1: Verify Umi-OCR container is running
       - name: Verify Umi-OCR container
