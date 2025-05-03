@@ -26,7 +26,8 @@ WORKDIR /app
 # 可选1：将主机目录中的发行包，复制到容器内
 # COPY Umi-OCR_Linux_Paddle_2.1.5.tar.xz .
 # 可选2：在线下载发行包
-RUN wget https://github.com/hiroi-sora/Umi-OCR/releases/download/v2.1.5/Umi-OCR_Linux_Paddle_2.1.5.tar.xz
+# RUN wget https://github.com/hiroi-sora/Umi-OCR/releases/download/v2.1.5/Umi-OCR_Linux_Paddle_2.1.5.tar.xz
+RUN wget https://github.com/UlinoyaPed/Umi-OCR-action/releases/download/v1.0.0/Umi-OCR_Linux_Paddle_2.1.5.tar.xz
 
 # 解压压缩包，移动文件，删除多余的目录和压缩包
 RUN tar -v -xf Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \

@@ -43,3 +43,13 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/umi-ocr-paddle:latest
             ghcr.io/${{ env.OWNER_LC }}/umi-ocr-paddle:${{ github.run_id }}
+
+      # - name: Build and Push
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: ./PaddleOCR-json
+      #     file: Dockerfile
+      #     push: true
+      #     tags: |
+      #       ghcr.io/${{ env.OWNER_LC }}/paddleocr-json:latest
+      #       ghcr.io/${{ env.OWNER_LC }}/paddleocr-json:${{ github.run_id }}
