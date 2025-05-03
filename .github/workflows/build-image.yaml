@@ -14,9 +14,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Dockerfile
-        run: |
-          curl -o Dockerfile https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/Dockerfile
+      # - name: Download Dockerfile
+      #   run: |
+      #     curl -o Dockerfile https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/Dockerfile
 
       - name: Verify Dockerfile
         run: test -f Dockerfile || (echo "Dockerfile missing"; exit 1)
@@ -28,6 +28,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
+
       - name: Build and Push
         uses: docker/build-push-action@v5
         with:
@@ -35,5 +41,5 @@ jobs:
           file: Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/umi-ocr-paddle:latest
-            ghcr.io/${{ github.repository_owner }}/umi-ocr-paddle:${{ github.run_id }}
+            ghcr.io/${{ env.OWNER_LC }}/umi-ocr-paddle:latest
+            ghcr.io/${{ env.OWNER_LC }}/umi-ocr-paddle:${{ github.run_id }}

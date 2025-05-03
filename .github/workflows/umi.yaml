@@ -36,10 +36,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
+
       - name: Pull prebuilt image
         run: |
-          docker pull ghcr.io/${{ github.repository }}/umi-ocr-paddle:latest
-          docker tag ghcr.io/${{ github.repository }}/umi-ocr-paddle:latest umi-ocr-paddle:latest
+          docker pull ghcr.io/${{ env.OWNER_LC }}/umi-ocr-paddle:latest
+          docker tag ghcr.io/${{ env.OWNER_LC }}/umi-ocr-paddle:latest umi-ocr-paddle:latest
 
       # Step 4: Run the Docker container in headless mode
       - name: Run Umi-OCR container
