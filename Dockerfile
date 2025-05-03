@@ -35,8 +35,8 @@ RUN tar -v -xf Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \
     rm Umi-OCR_Linux_Paddle_2.1.5.tar.xz
 
 # 下载最新的启动脚本
-RUN wget -O umi-ocr.sh https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/umi-ocr.sh
-RUN chmod +x umi-ocr.sh
+# RUN wget -O umi-ocr.sh https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/umi-ocr.sh
+# RUN chmod +x umi-ocr.sh
 
 # 写入 Umi-OCR 预配置项：
 #    允许外部HTTP请求
