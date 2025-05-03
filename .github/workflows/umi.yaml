@@ -13,11 +13,12 @@ jobs:
     runs-on: ubuntu-latest  # 使用最新的 Ubuntu 作为运行环境
     permissions:
       packages: read  # 允许读取包
+      contents: write  # 允许写入内容
 
     steps:
       # Step 1: Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v3  # 拉取当前仓库代码
+        uses: actions/checkout@v4  # 拉取当前仓库代码
 
       - name: Set up Python
         uses: actions/setup-python@v4  # 设置 Python 环境
