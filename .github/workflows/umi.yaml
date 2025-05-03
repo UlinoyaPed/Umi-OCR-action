@@ -88,20 +88,7 @@ jobs:
           ORIGINAL_NAME=$(basename "${DECODED_URL%%\?*}" .pdf)
           
           # 清理流程
-          SAFE_NAME=$(echo "$ORIGINAL_NAME" | \
-          # 清理特殊字符（保留 . 和中文）
-          sed -e '
-            s/[][()，,+=@&$!]/_/g;  # 替换危险符号
-            s/\s+/_/g;              # 空格转下划线
-            s/\.pdf$//i;            # 去除原始后缀（不区分大小写）
-            s/_-_/_/g;              # 处理间隔符变体
-            s/__\+/_/g;             # 合并连续下划线
-            s/^[_-]\+//;            # 去除开头无效字符
-            s/[_-]\+$//;            # 去除结尾无效字符
-          ' | \
-          # 按字符截断（而非字节），保留最后10字符给后缀
-          awk '{ len = length($0); max = 50; if (len > max) print substr($0, 1, max-10); else print $0 }'
-          )
+          SAFE_NAME=$(python3 -c "from pathlib import Path; import sys; print(Path('$ORIGINAL_NAME').stem)")
 
           # 输出清理后的文件名
           echo "清理后的文件名: $SAFE_NAME"
@@ -111,8 +98,13 @@ jobs:
       # Step 6: Perform OCR on the PDF
       - name: Perform OCR
         run: |
+          config='{
+            "ocr.language": "models/config_chinese_cht(v2).txt",
+            "ocr.cls": true,
+            "ocr.limit_side_len": 2880
+          }'
           # 上传 PDF 文件到 Umi-OCR API
-          curl -s -X POST -F "file=@input.pdf" -F "json={}" http://127.0.0.1:1224/api/doc/upload > upload_response.json
+          curl -s -X POST -F "file=@input.pdf" -F "json=$config" http://127.0.0.1:1224/api/doc/upload > upload_response.json
           cat upload_response.json  # 打印上传响应
           TASK_ID=$(jq -r '.data' upload_response.json)  # 提取任务 ID
           echo "Task ID: $TASK_ID"  # 打印任务 ID
