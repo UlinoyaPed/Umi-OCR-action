@@ -74,7 +74,13 @@ jobs:
       - name: Download PDF
         run: |
           # 下载用户提供的 PDF 文件并记录原始文件名（去除后缀）
-          curl -o input.pdf "${{ github.event.inputs.pdf_url }}"
+          for i in {1..3}; do
+          curl -o input.pdf "${{ github.event.inputs.pdf_url }}" && break || sleep 5
+          done
+          if [ ! -s input.pdf ]; then
+          echo "Failed to download PDF after 3 attempts" && exit 1
+          fi
+
           URL="${{ github.event.inputs.pdf_url }}"
           ORIGINAL_NAME=$(basename "${URL%%\?*}" .pdf)  # 提取文件名并去掉扩展名
           
@@ -100,12 +106,6 @@ jobs:
           echo "清理后的文件名: $SAFE_NAME"
 
           echo "ORIGINAL_NAME=$SAFE_NAME" >> $GITHUB_ENV
-
-      # Step 5.1: Verify PDF file is downloaded
-      - name: Verify PDF file
-        run: |
-          # 验证 PDF 文件是否成功下载
-          ls -lh input.pdf || (echo "PDF file not found or empty" && exit 1)
 
       # Step 6: Perform OCR on the PDF
       - name: Perform OCR
