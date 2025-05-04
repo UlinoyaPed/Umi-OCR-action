@@ -98,10 +98,11 @@ jobs:
       # Step 6: Perform OCR on the PDF
       - name: Perform OCR
         run: |
-          config='{
-            "ocr.cls": true,
-            "ocr.limit_side_len": 2880
-          }'
+          # config='{
+          #   "ocr.cls": true,
+          #   "ocr.limit_side_len": 2880
+          # }'
+          config='{}'
           # 上传 PDF 文件到 Umi-OCR API
           curl -s -X POST -F "file=@input.pdf" -F "json=$config" http://127.0.0.1:1224/api/doc/upload > upload_response.json
           cat upload_response.json  # 打印上传响应
