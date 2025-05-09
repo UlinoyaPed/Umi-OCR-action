@@ -42,12 +42,12 @@ RUN tar -v -xf Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \
 RUN wget https://github.com/Gavin1937/PaddleOCR-json/releases/download/20250425-latest-main-1beac1/linux_x64_PaddleOCR-json_HEAD_1beac1.tar.xz
 
 # 解压 & 替换引擎
-RUN tar vfx linux_x64_PaddleOCR-json_HEAD_1beac1.tar.xz \
-    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/models/ \
-    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/lib/ \
-    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/bin/ \
-    cp -fr linux_x64_PaddleOCR-json_HEAD_1beac1/* UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/ \
-    rm linux_x64_PaddleOCR-json_HEAD_1beac1.tar.xz \
+RUN tar vfx linux_x64_PaddleOCR-json_HEAD_1beac1.tar.xz && \
+    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/models/ && \
+    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/lib/ && \
+    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/bin/ && \
+    cp -fr linux_x64_PaddleOCR-json_HEAD_1beac1/* UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/ && \
+    rm linux_x64_PaddleOCR-json_HEAD_1beac1.tar.xz && \
     rm -rf linux_x64_PaddleOCR-json_HEAD_1beac1
 
 # 写入 Umi-OCR 预配置项：
