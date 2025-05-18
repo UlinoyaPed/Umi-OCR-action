@@ -60,6 +60,7 @@ ui.fontFamily=WenQuanYi Micro Hei\n\
 ui.dataFontFamily=WenQuanYi Micro Hei\n\
 " > ./UmiOCR-data/.settings
 
+RUN chmod +x /app/UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/run.sh
 
 # 运行指令
-ENTRYPOINT ["/app/umi-ocr.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "/app/UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/run.sh && /app/umi-ocr.sh"]
