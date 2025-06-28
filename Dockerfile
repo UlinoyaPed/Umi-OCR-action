@@ -21,11 +21,17 @@ WORKDIR /src/
 # 下载PaddleOCR-json源码
 RUN git clone --recursive https://github.com/hiroi-sora/PaddleOCR-json
 
-# 下载依赖库 - 添加证书和SSL配置
+# 下载依赖库 - 添加下载重试
 RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && \
-    wget https://paddle-inference-lib.bj.bcebos.com/3.0.0/cxx_c/Linux/CPU/gcc8.2_avx_mkl/paddle_inference.tgz && \
+    for i in {1..3}; do \
+        wget --tries=3 --waitretry=10 --retry-connrefused https://paddle-inference-lib.bj.bcebos.com/3.0.0/cxx_c/Linux/CPU/gcc8.2_avx_mkl/paddle_inference.tgz && \
+        break; \
+    done && \
     tar -xf paddle_inference.tgz && \
-    wget https://github.com/hiroi-sora/PaddleOCR-json/releases/download/v1.4.0-beta.2/opencv-release_debian_x86-64.zip && \
+    for i in {1..3}; do \
+        wget --tries=3 --waitretry=10 --retry-connrefused https://github.com/hiroi-sora/PaddleOCR-json/releases/download/v1.4.0-beta.2/opencv-release_debian_x86-64.zip && \
+        break; \
+    done && \
     unzip -x opencv-release_debian_x86-64.zip && \
     mkdir -p /src/PaddleOCR-json/cpp/.source && \
     mv /src/paddle_inference /src/PaddleOCR-json/cpp/.source/ && \
@@ -73,22 +79,29 @@ WORKDIR /app
 
 # 下载发行包 - 添加证书更新
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && update-ca-certificates && \
-    wget https://github.com/hiroi-sora/Umi-OCR/releases/download/v2.1.5/Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \
+    for i in {1..3}; do \
+        wget --tries=3 --waitretry=10 --retry-connrefused https://github.com/hiroi-sora/Umi-OCR/releases/download/v2.1.5/Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \
+        break; \
+    done && \
     tar -v -xf Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \
     mv Umi-OCR_Linux_Paddle_2.1.5/* . && \
     rmdir Umi-OCR_Linux_Paddle_2.1.5 && \
     rm Umi-OCR_Linux_Paddle_2.1.5.tar.xz
 
-# 替换PaddleOCR-json引擎（重构操作顺序）
-RUN apt-get update && apt-get install -y --no-install-recommends wget unzip ca-certificates && \
+# 替换PaddleOCR-json引擎 - 修复目录移动问题
+RUN apt-get update && apt-get install -y --no-install-recommends wget unzip rsync ca-certificates && \
     update-ca-certificates && \
-    wget https://github.com/hiroi-sora/PaddleOCR-json/releases/download/v1.4.1-dev/models_v1.4.1.zip && \
+    for i in {1..3}; do \
+        wget --tries=3 --waitretry=10 --retry-connrefused https://github.com/hiroi-sora/PaddleOCR-json/releases/download/v1.4.1-dev/models_v1.4.1.zip && \
+        break; \
+    done && \
     unzip -x models_v1.4.1.zip -d ./temp_models && \
-    mv ./temp_models/models/ UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/ && \
+    # 改为使用rsync确保目标目录被正确覆盖
+    rsync -a --delete ./temp_models/models/ UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/models/ && \
     rm -rf ./temp_models models_v1.4.1.zip && \
-    apt-get purge -y wget unzip && apt-get autoremove -y
-    
-# 从构建阶段复制编译好的二进制（先复制再清理旧文件）
+    apt-get purge -y wget unzip rsync && apt-get autoremove -y
+
+# 从构建阶段复制编译好的二进制
 COPY --from=build /src/PaddleOCR-json/cpp/build/install/ /app/UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/
 
 # 写入Umi-OCR预配置项
