@@ -90,11 +90,13 @@ RUN tar -v -xf Umi-OCR_Linux_Paddle_2.1.5.tar.xz && \
 # RUN wget -O umi-ocr.sh https://raw.githubusercontent.com/hiroi-sora/Umi-OCR_runtime_linux/main/umi-ocr.sh
 
 # 替换PaddleOCR-json引擎
-RUN rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/models/ && \
+RUN apt-get update && apt-get install -y wget unzip && \
+    rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/models/ && \
     rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/lib/ && \
     rm -rf UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/bin/ && \
     wget https://github.com/hiroi-sora/PaddleOCR-json/releases/download/v1.4.1-dev/models_v1.4.1.zip && \
     unzip -x models_v1.4.1.zip && mv ./models/ UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/
+    
 COPY --from=build /src/PaddleOCR-json/cpp/build/install/ /app/UmiOCR-data/plugins/linux_x64_PaddleOCR-json_v141/
 
 # 写入 Umi-OCR 预配置项：
